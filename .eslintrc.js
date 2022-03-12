@@ -18,11 +18,7 @@ module.exports = {
     ecmaVersion: 12,
     sourceType: 'module',
   },
-  plugins: [
-    'react',
-    '@typescript-eslint',
-    'prettier', 
-  ],
+  plugins: ['react', '@typescript-eslint', 'prettier'],
   rules: {
     'no-use-before-define': 'off',
     '@typescript-eslint/no-use-before-define': ['error'],
@@ -34,10 +30,10 @@ module.exports = {
     ],
     'react/prop-types': 'off',
     'spaced-comment': ['error', 'always', { markers: ['/ <reference'] }],
-    'prettier/prettier': 'error', 
+    'prettier/prettier': 'error',
     'import/prefer-default-export': 'off',
     'jsx-curly-newline': 'off',
-    "react/jsx-curly-newline": "off"
+    'react/jsx-curly-newline': 'off',
   },
   settings: {
     'import/resolver': {
