@@ -1,7 +1,10 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import styled from 'styled-components';
 import Skeleton from '@material-ui/lab/Skeleton';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
+import { NewOrderConfirmDialog } from '../components/NewOrderConfirmDialog';
+import { postLineFoods, replaceLineFoods } from '../apis/lineFoods';
+import { REQUEST_STATE } from '../constants';
 import { fetchFoods } from '../apis/foods';
 import { COLORS } from '../styleConstants';
 import { LocalMallIcon } from '../components/Icons';
@@ -11,9 +14,10 @@ import {
   foodsTyps,
   foodsReducer,
 } from '../reducers/foods';
-import { REQUEST_STATE } from '../constants';
+
 import MainLogo from '../images/logo.png';
 import FoodImage from '../images/food-image.jpg';
+import { FoodOrderDialog } from '../components/FoodOrderDialog';
 
 const HeaderWrapper = styled.div`
   display: flex;
@@ -45,7 +49,47 @@ const ItemWrapper = styled.div`
 `;
 
 export const Foods: React.VFC<{ match: any }> = ({ match }: { match: any }) => {
+  const history = useHistory();
   const [foodsState, dispatch] = useReducer(foodsReducer, foodsInitialState);
+
+  const initialState = {
+    isOpenOrderDialog: false,
+    selectedFood: { id: null },
+    selectedFoodCount: 1,
+    isOpenNewOrderDialog: false,
+    existingResutaurautName: '',
+    newResutaurautName: '',
+  };
+  const [state, setState] = useState(initialState);
+
+  const submitOrder = () => {
+    postLineFoods({
+      foodId: state.selectedFood?.id,
+      count: state.selectedFoodCount,
+    })
+      .then(() => history.push('/orders'))
+      .catch((e) => {
+        console.log(e);
+        // if (e.response.status === HTTP_STATUS_CODE.NOT_ACCEPTABLE) {
+        //   setState({
+        //     ...state,
+        //     isOpenOrderDialog: false,
+        //     isOpenNewOrderDialog: true,
+        //     existingResutaurautName: e.response.data.existing_restaurant,
+        //     newResutaurautName: e.response.data.new_restaurant,
+        //   });
+        // } else {
+        //   throw e;
+        // }
+      });
+  };
+
+  const replaceOrder = () => {
+    replaceLineFoods({
+      foodId: state.selectedFood.id,
+      count: state.selectedFoodCount,
+    }).then(() => history.push('/orders'));
+  };
   useEffect(() => {
     async function asyncLoadData() {
       try {
@@ -90,13 +134,58 @@ export const Foods: React.VFC<{ match: any }> = ({ match }: { match: any }) => {
             <ItemWrapper key={food.id}>
               <FoodWrapper
                 food={food}
-                onClickFoodWrapper={(foods: any) => console.log(foods)}
+                onClickFoodWrapper={(foodDetail: any) =>
+                  setState({
+                    ...state,
+                    isOpenOrderDialog: true,
+                    selectedFood: foodDetail,
+                  })
+                }
                 imageUrl={FoodImage}
               />
             </ItemWrapper>
           ))
         )}
       </FoodsList>
+      {state.isOpenOrderDialog && (
+        <FoodOrderDialog
+          isOpen={state.isOpenOrderDialog}
+          food={state.selectedFood}
+          countNumber={state.selectedFoodCount}
+          onClickCountUp={() =>
+            setState({
+              ...state,
+              selectedFoodCount: state.selectedFoodCount + 1,
+            })
+          }
+          onClickCountDown={() =>
+            setState({
+              ...state,
+              selectedFoodCount: state.selectedFoodCount - 1,
+            })
+          }
+          // 先ほど作った関数を渡します
+          onClickOrder={() => submitOrder()}
+          // モーダルを閉じる時はすべてのstateを初期化する
+          onClose={() =>
+            setState({
+              ...state,
+              isOpenOrderDialog: false,
+              selectedFood: { id: null },
+              selectedFoodCount: 1,
+            })
+          }
+        />
+      )}
+      {state.isOpenNewOrderDialog && (
+        <NewOrderConfirmDialog
+          isOpen={state.isOpenNewOrderDialog}
+          onClose={() => setState({ ...state, isOpenNewOrderDialog: false })}
+          existingResutaurautName={state.existingResutaurautName}
+          newResutaurautName={state.newResutaurautName}
+          onClickSubmit={() => replaceOrder()}
+        />
+      )}
     </>
   );
 };
